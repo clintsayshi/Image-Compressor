@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Editor</title>
+    <!-- Include Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 flex justify-center items-center h-screen">
+    <div class="w-full sm:w-auto sm:max-w-md bg-white p-6 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-4 text-center">Image Compressor</h1>
+        <input type="file" accept="image/*" id="imageInput" class="w-full mb-4">
+        <button onclick="editImage()"
+            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+            Compress Image
+        </button>
+        <div id="loader" class="text-center mt-4 hidden">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <p class="mt-2">Compressing Image...</p>
+        </div>
+        <div id="compressionInfo" class="text-center mt-4 hidden">
+            <p id="compressionText"></p>
+        </div>
+        <div class="text-center mt-4">
+            <a id="downloadLink" style="display:none" download="edited_image.png"
+                class="text-blue-500 font-bold">Download Edited Image</a>
+        </div>
+    </div>
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/browser-image-compression@1.0.10/dist/browser-image-compression.min.js"></script>
+    <script>
+        async function editImage() {
+            const imageInput = document.getElementById('imageInput');
+            const file = imageInput.files[0];
+
+            if (!file) {
+                alert("Please select an image.");
+                return;
+            }
+
+            const loader = document.getElementById('loader');
+            loader.classList.remove('hidden');
+
+            try {
+                const originalSize = file.size;
+
+                const compressedFile = await imageCompression(file, { maxSizeMB: 0.2, quality: 1 });
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const image = new Image();
+                    image.src = e.target.result;
+
+                    image.onload = function () {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = image.width;
+                        canvas.height = image.height;
+                        ctx.drawImage(image, 0, 0);
+
+                        const dataUrl = canvas.toDataURL('image/png');
+                        const downloadLink = document.getElementById('downloadLink');
+                        downloadLink.href = dataUrl;
+                        downloadLink.style.display = 'block';
+
+                        const compressedSize = compressedFile.size;
+                        const compressionRatio = originalSize / compressedSize;
+                        const compressionText = `Image compressed by ${compressionRatio.toFixed(2)}x`;
+                        const compressionInfo = document.getElementById('compressionInfo');
+                        const compressionTextElement = document.getElementById('compressionText');
+                        compressionTextElement.textContent = compressionText;
+                        compressionInfo.classList.remove('hidden');
+                    };
+                };
+                reader.readAsDataURL(compressedFile);
+            } catch (error) {
+                console.error('Error compressing image:', error);
+                alert('Error compressing image. Please try again.');
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+
+</html>
